@@ -150,6 +150,31 @@ td {
   font-size: 0.95rem;
 }
 
+td > span {
+  display: block;
+}
+
+.status-pill {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: 8px;
+  padding: 6px 9px;
+  white-space: nowrap;
+}
+
+.status-pill--employment {
+  background: #e6f4ef;
+  color: #166447;
+}
+
+.status-pill--termination {
+  background: #fff1df;
+  color: #92500c;
+}
+
 tbody tr:last-child td {
   border-bottom: 0;
 }
