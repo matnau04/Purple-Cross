@@ -1,7 +1,22 @@
 <script setup>
+import { computed, ref } from 'vue';
 import employees from './data/employees.json';
 
 const employeeCount = employees.length;
+const searchQuery = ref('');
+const sortConfig = ref({
+  key: 'fullName',
+  direction: 'asc',
+});
+
+const sortableColumns = [
+  { key: 'code', label: 'Code' },
+  { key: 'fullName', label: 'Full Name' },
+  { key: 'occupation', label: 'Occupation' },
+  { key: 'department', label: 'Department' },
+  { key: 'dateOfEmployment', label: 'Date of Employment' },
+  { key: 'terminationDate', label: 'Termination Date' },
+];
 
 const dateFormatter = new Intl.DateTimeFormat('en-GB', {
   day: '2-digit',
@@ -36,6 +51,69 @@ const formatDate = (dateValue) => {
 
   return dateFormatter.format(new Date(dateValue));
 };
+
+const filteredEmployees = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+
+  if (!query) {
+    return employees;
+  }
+
+  return employees.filter((employee) =>
+    [
+      employee.code,
+      employee.fullName,
+      employee.occupation,
+      employee.department,
+      employee.dateOfEmployment,
+      employee.terminationDate,
+      getEmploymentStatus(employee.dateOfEmployment),
+      getTerminationStatus(employee.terminationDate),
+    ]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(query)),
+  );
+});
+
+const sortedEmployees = computed(() => {
+  const { key, direction } = sortConfig.value;
+  const directionMultiplier = direction === 'asc' ? 1 : -1;
+
+  return [...filteredEmployees.value].sort((firstEmployee, secondEmployee) => {
+    const firstValue = firstEmployee[key] ?? '';
+    const secondValue = secondEmployee[key] ?? '';
+
+    return (
+      String(firstValue).localeCompare(String(secondValue), undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      }) * directionMultiplier
+    );
+  });
+});
+
+const setSort = (key) => {
+  if (sortConfig.value.key === key) {
+    sortConfig.value = {
+      key,
+      direction: sortConfig.value.direction === 'asc' ? 'desc' : 'asc',
+    };
+    return;
+  }
+
+  sortConfig.value = {
+    key,
+    direction: 'asc',
+  };
+};
+
+const getSortLabel = (key) => {
+  if (sortConfig.value.key !== key) {
+    return 'Sort';
+  }
+
+  return sortConfig.value.direction === 'asc' ? 'Ascending' : 'Descending';
+};
 </script>
 
 <template>
@@ -61,24 +139,42 @@ const formatDate = (dateValue) => {
       <div class="section-heading">
         <div>
           <h2 id="employee-table-title">Employees</h2>
-          <p>Initial data view from the provided Purple Cross employee sample.</p>
+          <p>
+            Showing {{ sortedEmployees.length }} of {{ employeeCount }} employee records.
+          </p>
         </div>
+        <label class="search-field">
+          <span>Search employees</span>
+          <input
+            v-model="searchQuery"
+            type="search"
+            placeholder="Name, department, status..."
+          />
+        </label>
       </div>
 
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th scope="col">Code</th>
-              <th scope="col">Full Name</th>
-              <th scope="col">Occupation</th>
-              <th scope="col">Department</th>
-              <th scope="col">Date of Employment</th>
-              <th scope="col">Termination Date</th>
+              <th
+                v-for="column in sortableColumns"
+                :key="column.key"
+                scope="col"
+              >
+                <button
+                  class="sort-button"
+                  type="button"
+                  @click="setSort(column.key)"
+                >
+                  {{ column.label }}
+                  <span class="sort-indicator">{{ getSortLabel(column.key) }}</span>
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="employee in employees" :key="employee.code">
+            <tr v-for="employee in sortedEmployees" :key="employee.code">
               <td>{{ employee.code }}</td>
               <td>{{ employee.fullName }}</td>
               <td>{{ employee.occupation }}</td>
@@ -97,6 +193,11 @@ const formatDate = (dateValue) => {
                 >
                   {{ getTerminationStatus(employee.terminationDate) }}
                 </span>
+              </td>
+            </tr>
+            <tr v-if="sortedEmployees.length === 0">
+              <td class="empty-state" colspan="6">
+                No employees match the current search.
               </td>
             </tr>
           </tbody>
