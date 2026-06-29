@@ -10,6 +10,15 @@ const sortConfig = ref({
 });
 const employeePendingDelete = ref(null);
 const isDeleteDialogOpen = ref(false);
+const isCreateDialogOpen = ref(false);
+const employeeForm = ref({
+  code: '',
+  fullName: '',
+  occupation: '',
+  department: '',
+  dateOfEmployment: '',
+  terminationDate: '',
+});
 
 const sortableColumns = [
   { key: 'code', label: 'Code' },
@@ -161,6 +170,14 @@ const confirmDeleteEmployee = () => {
   );
   cancelDeleteEmployee();
 };
+
+const openCreateEmployee = () => {
+  isCreateDialogOpen.value = true;
+};
+
+const closeCreateEmployee = () => {
+  isCreateDialogOpen.value = false;
+};
 </script>
 
 <template>
@@ -307,6 +324,67 @@ const confirmDeleteEmployee = () => {
               </v-btn>
               <v-btn color="error" variant="flat" @click="confirmDeleteEmployee">
                 Delete
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <v-btn
+          class="create-employee-button"
+          color="primary"
+          prepend-icon="mdi-account-plus"
+          size="large"
+          @click="openCreateEmployee"
+        >
+          Create Employee
+        </v-btn>
+
+        <v-dialog v-model="isCreateDialogOpen" max-width="720" persistent>
+          <v-card rounded="lg">
+            <v-card-title>Create employee</v-card-title>
+            <v-card-text>
+              <v-form class="employee-form">
+                <v-text-field
+                  v-model="employeeForm.code"
+                  label="Code"
+                  variant="outlined"
+                />
+                <v-text-field
+                  v-model="employeeForm.fullName"
+                  label="Full Name"
+                  variant="outlined"
+                />
+                <v-text-field
+                  v-model="employeeForm.occupation"
+                  label="Occupation"
+                  variant="outlined"
+                />
+                <v-text-field
+                  v-model="employeeForm.department"
+                  label="Department"
+                  variant="outlined"
+                />
+                <v-text-field
+                  v-model="employeeForm.dateOfEmployment"
+                  label="Date of Employment"
+                  type="date"
+                  variant="outlined"
+                />
+                <v-text-field
+                  v-model="employeeForm.terminationDate"
+                  label="Termination Date"
+                  type="date"
+                  variant="outlined"
+                />
+              </v-form>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer />
+              <v-btn variant="text" @click="closeCreateEmployee">
+                Cancel
+              </v-btn>
+              <v-btn color="primary" disabled variant="flat">
+                Save
               </v-btn>
             </v-card-actions>
           </v-card>
