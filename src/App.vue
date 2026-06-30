@@ -1,5 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue';
+import EmployeeDeleteDialog from './components/EmployeeDeleteDialog.vue';
+import EmployeeFormDialog from './components/EmployeeFormDialog.vue';
+import EmployeeProfileDialog from './components/EmployeeProfileDialog.vue';
 import AppHeader from './components/AppHeader.vue';
 import EmployeeSummary from './components/EmployeeSummary.vue';
 import EmployeeTable from './components/EmployeeTable.vue';
@@ -21,8 +24,6 @@ const isDeleteDialogOpen = ref(false);
 const isViewDialogOpen = ref(false);
 const isCreateDialogOpen = ref(false);
 const isEditDialogOpen = ref(false);
-const createFormRef = ref(null);
-const editFormRef = ref(null);
 const employeeForm = ref({
   code: '',
   fullName: '',
@@ -49,7 +50,6 @@ const sortableColumns = [
   { key: 'terminationDate', label: 'Termination Date' },
 ];
 const employeeCount = computed(() => employees.value.length);
-const requiredRule = (value) => Boolean(String(value ?? '').trim()) || 'This field is required.';
 const employeeCodeRule = (value) => {
   const code = String(value ?? '').trim();
 
@@ -240,13 +240,7 @@ const closeCreateEmployee = () => {
   isCreateDialogOpen.value = false;
 };
 
-const saveEmployee = async () => {
-  const validation = await createFormRef.value?.validate();
-
-  if (!validation?.valid) {
-    return;
-  }
-
+const saveEmployee = () => {
   employees.value = [
     ...employees.value,
     {
@@ -267,10 +261,8 @@ const saveEmployee = async () => {
   closeCreateEmployee();
 };
 
-const saveEmployeeEdits = async () => {
-  const validation = await editFormRef.value?.validate();
-
-  if (!validation?.valid || !selectedEmployee.value) {
+const saveEmployeeEdits = () => {
+  if (!selectedEmployee.value) {
     return;
   }
 
@@ -309,84 +301,18 @@ const saveEmployeeEdits = async () => {
           @view-employee="viewEmployee"
         />
 
-        <v-dialog v-model="isDeleteDialogOpen" max-width="440">
-          <v-card rounded="lg">
-            <v-card-title>Delete employee</v-card-title>
-            <v-card-text>
-              Delete {{ employeePendingDelete?.fullName }} from the employee list?
-            </v-card-text>
-            <v-card-actions>
-              <v-spacer />
-              <v-btn variant="text" @click="cancelDeleteEmployee">
-                Cancel
-              </v-btn>
-              <v-btn color="error" variant="flat" @click="confirmDeleteEmployee">
-                Delete
-              </v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
+        <EmployeeDeleteDialog
+          v-model="isDeleteDialogOpen"
+          :employee="employeePendingDelete"
+          @cancel="cancelDeleteEmployee"
+          @confirm="confirmDeleteEmployee"
+        />
 
-        <v-dialog v-model="isViewDialogOpen" max-width="680">
-          <v-card rounded="lg">
-            <v-card-title>Employee profile</v-card-title>
-            <v-card-text v-if="selectedEmployee">
-              <dl class="profile-details">
-                <div>
-                  <dt>Code</dt>
-                  <dd>{{ selectedEmployee.code }}</dd>
-                </div>
-                <div>
-                  <dt>Full Name</dt>
-                  <dd>{{ selectedEmployee.fullName }}</dd>
-                </div>
-                <div>
-                  <dt>Occupation</dt>
-                  <dd>{{ selectedEmployee.occupation }}</dd>
-                </div>
-                <div>
-                  <dt>Department</dt>
-                  <dd>{{ selectedEmployee.department }}</dd>
-                </div>
-                <div>
-                  <dt>Date of Employment</dt>
-                  <dd>
-                    {{ formatDate(selectedEmployee.dateOfEmployment) }}
-                    <v-chip
-                      class="status-chip"
-                      :color="getEmploymentStatusColor(selectedEmployee.dateOfEmployment)"
-                      size="small"
-                      variant="tonal"
-                    >
-                      {{ getEmploymentStatus(selectedEmployee.dateOfEmployment) }}
-                    </v-chip>
-                  </dd>
-                </div>
-                <div>
-                  <dt>Termination Date</dt>
-                  <dd>
-                    {{ formatDate(selectedEmployee.terminationDate) }}
-                    <v-chip
-                      v-if="getTerminationStatus(selectedEmployee.terminationDate)"
-                      class="status-chip"
-                      :color="getTerminationStatusColor(selectedEmployee.terminationDate)"
-                      size="small"
-                      variant="tonal"
-                    >
-                      {{ getTerminationStatus(selectedEmployee.terminationDate) }}
-                    </v-chip>
-                  </dd>
-                </div>
-              </dl>
-            </v-card-text>
-            <v-card-actions>
-              <v-spacer />
-              <v-btn color="primary" variant="flat" @click="closeViewEmployee">
-                Close
-              </v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
+        <EmployeeProfileDialog
+          v-model="isViewDialogOpen"
+          :employee="selectedEmployee"
+          @close="closeViewEmployee"
+        />
 
         <v-btn
           class="create-employee-button"
@@ -398,127 +324,25 @@ const saveEmployeeEdits = async () => {
           Create Employee
         </v-btn>
 
-        <v-dialog v-model="isCreateDialogOpen" max-width="720" persistent>
-          <v-card rounded="lg">
-            <v-card-title>Create employee</v-card-title>
-            <v-card-text>
-              <v-form
-                ref="createFormRef"
-                class="employee-form"
-                validate-on="submit"
-                @submit.prevent="saveEmployee"
-              >
-                <v-text-field
-                  v-model="employeeForm.code"
-                  label="Code"
-                  :rules="[employeeCodeRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="employeeForm.fullName"
-                  label="Full Name"
-                  :rules="[requiredRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="employeeForm.occupation"
-                  label="Occupation"
-                  :rules="[requiredRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="employeeForm.department"
-                  label="Department"
-                  :rules="[requiredRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="employeeForm.dateOfEmployment"
-                  label="Date of Employment"
-                  type="date"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="employeeForm.terminationDate"
-                  label="Termination Date"
-                  :rules="[terminationDateRule]"
-                  type="date"
-                  variant="outlined"
-                />
-              </v-form>
-            </v-card-text>
-            <v-card-actions>
-              <v-spacer />
-              <v-btn variant="text" @click="closeCreateEmployee">
-                Cancel
-              </v-btn>
-              <v-btn color="primary" variant="flat" @click="saveEmployee">
-                Save
-              </v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
+        <EmployeeFormDialog
+          v-model="isCreateDialogOpen"
+          :code-rules="[employeeCodeRule]"
+          :form="employeeForm"
+          :termination-date-rules="[terminationDateRule]"
+          title="Create employee"
+          @cancel="closeCreateEmployee"
+          @save="saveEmployee"
+        />
 
-        <v-dialog v-model="isEditDialogOpen" max-width="720" persistent>
-          <v-card rounded="lg">
-            <v-card-title>Edit employee</v-card-title>
-            <v-card-text>
-              <v-form
-                ref="editFormRef"
-                class="employee-form"
-                validate-on="submit"
-                @submit.prevent="saveEmployeeEdits"
-              >
-                <v-text-field
-                  v-model="editEmployeeForm.code"
-                  label="Code"
-                  :rules="[editEmployeeCodeRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="editEmployeeForm.fullName"
-                  label="Full Name"
-                  :rules="[requiredRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="editEmployeeForm.occupation"
-                  label="Occupation"
-                  :rules="[requiredRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="editEmployeeForm.department"
-                  label="Department"
-                  :rules="[requiredRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="editEmployeeForm.dateOfEmployment"
-                  label="Date of Employment"
-                  type="date"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="editEmployeeForm.terminationDate"
-                  label="Termination Date"
-                  :rules="[editTerminationDateRule]"
-                  type="date"
-                  variant="outlined"
-                />
-              </v-form>
-            </v-card-text>
-            <v-card-actions>
-              <v-spacer />
-              <v-btn variant="text" @click="closeEditEmployee">
-                Cancel
-              </v-btn>
-              <v-btn color="primary" variant="flat" @click="saveEmployeeEdits">
-                Save
-              </v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
+        <EmployeeFormDialog
+          v-model="isEditDialogOpen"
+          :code-rules="[editEmployeeCodeRule]"
+          :form="editEmployeeForm"
+          :termination-date-rules="[editTerminationDateRule]"
+          title="Edit employee"
+          @cancel="closeEditEmployee"
+          @save="saveEmployeeEdits"
+        />
       </div>
     </v-main>
   </v-app>
