@@ -2,13 +2,11 @@
 import { computed, ref } from 'vue';
 import AppHeader from './components/AppHeader.vue';
 import EmployeeSummary from './components/EmployeeSummary.vue';
+import EmployeeTable from './components/EmployeeTable.vue';
 import employeeSeedData from './data/employees.json';
 import {
-  formatDate,
   getEmploymentStatus,
-  getEmploymentStatusColor,
   getTerminationStatus,
-  getTerminationStatusColor,
 } from './utils/employeeDates';
 
 const employees = ref([...employeeSeedData]);
@@ -172,6 +170,14 @@ const getSortIcon = (key) => {
   return sortConfig.value.direction === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down';
 };
 
+const sortableTableColumns = computed(() =>
+  sortableColumns.map((column) => ({
+    ...column,
+    sortIcon: getSortIcon(column.key),
+    sortLabel: getSortLabel(column.key),
+  })),
+);
+
 const viewEmployee = (employee) => {
   selectedEmployee.value = employee;
   isViewDialogOpen.value = true;
@@ -292,116 +298,16 @@ const saveEmployeeEdits = async () => {
 
         <EmployeeSummary :employee-count="employeeCount" />
 
-        <section class="table-section" aria-labelledby="employee-table-title">
-          <div class="section-heading">
-            <div>
-              <h2 id="employee-table-title">Employees</h2>
-              <p>
-                Showing {{ sortedEmployees.length }} of {{ employeeCount }} employee records.
-              </p>
-            </div>
-            <v-text-field
-              v-model="searchQuery"
-              class="search-control"
-              clearable
-              density="comfortable"
-              hide-details
-              label="Search employees"
-              placeholder="Name, department, status..."
-              prepend-inner-icon="mdi-magnify"
-              variant="outlined"
-            />
-          </div>
-
-          <v-table class="employee-table" density="comfortable">
-            <thead>
-              <tr>
-                <th
-                  v-for="column in sortableColumns"
-                  :key="column.key"
-                  scope="col"
-                >
-                  <v-btn
-                    :append-icon="getSortIcon(column.key)"
-                    :aria-label="`${getSortLabel(column.key)} by ${column.label}`"
-                    class="sort-button"
-                    size="small"
-                    variant="text"
-                    @click="setSort(column.key)"
-                  >
-                    {{ column.label }}
-                  </v-btn>
-                </th>
-                <th scope="col">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="employee in sortedEmployees" :key="employee.code">
-                <td>{{ employee.code }}</td>
-                <td>{{ employee.fullName }}</td>
-                <td>{{ employee.occupation }}</td>
-                <td>{{ employee.department }}</td>
-                <td>
-                  <span>{{ formatDate(employee.dateOfEmployment) }}</span>
-                  <v-chip
-                    class="status-chip"
-                    :color="getEmploymentStatusColor(employee.dateOfEmployment)"
-                    size="small"
-                    variant="tonal"
-                  >
-                    {{ getEmploymentStatus(employee.dateOfEmployment) }}
-                  </v-chip>
-                </td>
-                <td>
-                  <span>{{ formatDate(employee.terminationDate) }}</span>
-                  <v-chip
-                    v-if="getTerminationStatus(employee.terminationDate)"
-                    class="status-chip"
-                    :color="getTerminationStatusColor(employee.terminationDate)"
-                    size="small"
-                    variant="tonal"
-                  >
-                    {{ getTerminationStatus(employee.terminationDate) }}
-                  </v-chip>
-                </td>
-                <td>
-                  <div class="row-actions" :aria-label="`Actions for ${employee.fullName}`">
-                    <v-btn
-                      prepend-icon="mdi-eye"
-                      size="small"
-                      variant="outlined"
-                      @click="viewEmployee(employee)"
-                    >
-                      View
-                    </v-btn>
-                    <v-btn
-                      prepend-icon="mdi-pencil"
-                      size="small"
-                      variant="outlined"
-                      @click="editEmployee(employee)"
-                    >
-                      Edit
-                    </v-btn>
-                    <v-btn
-                      color="error"
-                      prepend-icon="mdi-delete"
-                      size="small"
-                      variant="outlined"
-                      @click="requestDeleteEmployee(employee)"
-                    >
-                      Delete
-                    </v-btn>
-                  </div>
-                </td>
-              </tr>
-              <tr v-if="sortedEmployees.length === 0">
-                <td class="empty-state" colspan="7">
-                  No employees match the current search.
-                </td>
-              </tr>
-            </tbody>
-          </v-table>
-        </section>
+        <EmployeeTable
+          v-model:search-query="searchQuery"
+          :employee-count="employeeCount"
+          :employees="sortedEmployees"
+          :sortable-columns="sortableTableColumns"
+          @delete-employee="requestDeleteEmployee"
+          @edit-employee="editEmployee"
+          @set-sort="setSort"
+          @view-employee="viewEmployee"
+        />
 
         <v-dialog v-model="isDeleteDialogOpen" max-width="440">
           <v-card rounded="lg">
