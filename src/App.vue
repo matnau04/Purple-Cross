@@ -1,6 +1,13 @@
 <script setup>
 import { computed, ref } from 'vue';
 import employeeSeedData from './data/employees.json';
+import {
+  formatDate,
+  getEmploymentStatus,
+  getEmploymentStatusColor,
+  getTerminationStatus,
+  getTerminationStatusColor,
+} from './utils/employeeDates';
 
 const employees = ref([...employeeSeedData]);
 const searchQuery = ref('');
@@ -90,46 +97,6 @@ const editTerminationDateRule = (value) => {
     new Date(value) >= new Date(editEmployeeForm.value.dateOfEmployment) ||
     'Termination date cannot be before date of employment.'
   );
-};
-
-const dateFormatter = new Intl.DateTimeFormat('en-GB', {
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-});
-
-const getDateStatus = (dateValue, futureLabel, pastLabel) => {
-  if (!dateValue) {
-    return null;
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const targetDate = new Date(dateValue);
-  targetDate.setHours(0, 0, 0, 0);
-
-  return targetDate > today ? futureLabel : pastLabel;
-};
-
-const getEmploymentStatus = (dateValue) =>
-  getDateStatus(dateValue, 'Employed soon', 'Currently employed');
-
-const getTerminationStatus = (dateValue) =>
-  getDateStatus(dateValue, 'To be terminated', 'Terminated');
-
-const getEmploymentStatusColor = (dateValue) =>
-  getEmploymentStatus(dateValue) === 'Employed soon' ? 'info' : 'success';
-
-const getTerminationStatusColor = (dateValue) =>
-  getTerminationStatus(dateValue) === 'To be terminated' ? 'warning' : 'error';
-
-const formatDate = (dateValue) => {
-  if (!dateValue) {
-    return 'Not scheduled';
-  }
-
-  return dateFormatter.format(new Date(dateValue));
 };
 
 const filteredEmployees = computed(() => {
