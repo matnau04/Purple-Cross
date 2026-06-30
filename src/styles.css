@@ -173,6 +173,20 @@ h2 {
   text-align: center;
 }
 
+.create-employee-button {
+  bottom: 28px;
+  position: fixed;
+  right: 28px;
+  z-index: 10;
+}
+
+.employee-form {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 8px;
+}
+
 @media (max-width: 720px) {
   .app-shell {
     padding: 20px;
@@ -190,5 +204,15 @@ h2 {
   .search-control {
     flex: 1 1 auto;
     width: 100%;
+  }
+
+  .create-employee-button {
+    bottom: 18px;
+    left: 20px;
+    right: 20px;
+  }
+
+  .employee-form {
+    grid-template-columns: 1fr;
   }
 }

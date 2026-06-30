@@ -10,6 +10,16 @@ const sortConfig = ref({
 });
 const employeePendingDelete = ref(null);
 const isDeleteDialogOpen = ref(false);
+const isCreateDialogOpen = ref(false);
+const createFormRef = ref(null);
+const employeeForm = ref({
+  code: '',
+  fullName: '',
+  occupation: '',
+  department: '',
+  dateOfEmployment: '',
+  terminationDate: '',
+});
 
 const sortableColumns = [
   { key: 'code', label: 'Code' },
@@ -20,6 +30,30 @@ const sortableColumns = [
   { key: 'terminationDate', label: 'Termination Date' },
 ];
 const employeeCount = computed(() => employees.value.length);
+const requiredRule = (value) => Boolean(String(value ?? '').trim()) || 'This field is required.';
+const employeeCodeRule = (value) => {
+  const code = String(value ?? '').trim();
+
+  if (!code) {
+    return 'This field is required.';
+  }
+
+  return (
+    !employees.value.some(
+      (employee) => employee.code.toLowerCase() === code.toLowerCase(),
+    ) || 'Employee code must be unique.'
+  );
+};
+const terminationDateRule = (value) => {
+  if (!value || !employeeForm.value.dateOfEmployment) {
+    return true;
+  }
+
+  return (
+    new Date(value) >= new Date(employeeForm.value.dateOfEmployment) ||
+    'Termination date cannot be before date of employment.'
+  );
+};
 
 const dateFormatter = new Intl.DateTimeFormat('en-GB', {
   day: '2-digit',
@@ -160,6 +194,51 @@ const confirmDeleteEmployee = () => {
     (currentEmployee) => currentEmployee.code !== employeeCode,
   );
   cancelDeleteEmployee();
+};
+
+const getEmptyEmployeeForm = () => ({
+  code: '',
+  fullName: '',
+  occupation: '',
+  department: '',
+  dateOfEmployment: '',
+  terminationDate: '',
+});
+
+const openCreateEmployee = () => {
+  isCreateDialogOpen.value = true;
+};
+
+const closeCreateEmployee = () => {
+  employeeForm.value = getEmptyEmployeeForm();
+  isCreateDialogOpen.value = false;
+};
+
+const saveEmployee = async () => {
+  const validation = await createFormRef.value?.validate();
+
+  if (!validation?.valid) {
+    return;
+  }
+
+  employees.value = [
+    ...employees.value,
+    {
+      code: employeeForm.value.code.trim(),
+      fullName: employeeForm.value.fullName.trim(),
+      occupation: employeeForm.value.occupation.trim(),
+      department: employeeForm.value.department.trim(),
+      dateOfEmployment: employeeForm.value.dateOfEmployment || null,
+      terminationDate: employeeForm.value.terminationDate || null,
+    },
+  ];
+
+  sortConfig.value = {
+    key: 'code',
+    direction: 'desc',
+  };
+  searchQuery.value = '';
+  closeCreateEmployee();
 };
 </script>
 
@@ -307,6 +386,77 @@ const confirmDeleteEmployee = () => {
               </v-btn>
               <v-btn color="error" variant="flat" @click="confirmDeleteEmployee">
                 Delete
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <v-btn
+          class="create-employee-button"
+          color="primary"
+          prepend-icon="mdi-account-plus"
+          size="large"
+          @click="openCreateEmployee"
+        >
+          Create Employee
+        </v-btn>
+
+        <v-dialog v-model="isCreateDialogOpen" max-width="720" persistent>
+          <v-card rounded="lg">
+            <v-card-title>Create employee</v-card-title>
+            <v-card-text>
+              <v-form
+                ref="createFormRef"
+                class="employee-form"
+                validate-on="submit"
+                @submit.prevent="saveEmployee"
+              >
+                <v-text-field
+                  v-model="employeeForm.code"
+                  label="Code"
+                  :rules="[employeeCodeRule]"
+                  variant="outlined"
+                />
+                <v-text-field
+                  v-model="employeeForm.fullName"
+                  label="Full Name"
+                  :rules="[requiredRule]"
+                  variant="outlined"
+                />
+                <v-text-field
+                  v-model="employeeForm.occupation"
+                  label="Occupation"
+                  :rules="[requiredRule]"
+                  variant="outlined"
+                />
+                <v-text-field
+                  v-model="employeeForm.department"
+                  label="Department"
+                  :rules="[requiredRule]"
+                  variant="outlined"
+                />
+                <v-text-field
+                  v-model="employeeForm.dateOfEmployment"
+                  label="Date of Employment"
+                  type="date"
+                  variant="outlined"
+                />
+                <v-text-field
+                  v-model="employeeForm.terminationDate"
+                  label="Termination Date"
+                  :rules="[terminationDateRule]"
+                  type="date"
+                  variant="outlined"
+                />
+              </v-form>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer />
+              <v-btn variant="text" @click="closeCreateEmployee">
+                Cancel
+              </v-btn>
+              <v-btn color="primary" variant="flat" @click="saveEmployee">
+                Save
               </v-btn>
             </v-card-actions>
           </v-card>
