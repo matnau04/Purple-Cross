@@ -1,5 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
+import AppHeader from './components/AppHeader.vue';
+import EmployeeSummary from './components/EmployeeSummary.vue';
 import employeeSeedData from './data/employees.json';
 import {
   formatDate,
@@ -286,21 +288,9 @@ const saveEmployeeEdits = async () => {
   <v-app>
     <v-main>
       <div class="app-shell">
-        <v-sheet class="top-bar" color="surface" elevation="0" rounded="lg">
-          <div>
-            <p class="eyebrow">Purple Cross Ltd</p>
-            <h1>Employee Management</h1>
-          </div>
-          <v-spacer />
-          <v-avatar color="primary" size="48">
-            <span class="user-initials">HR</span>
-          </v-avatar>
-        </v-sheet>
+        <AppHeader />
 
-        <v-sheet class="summary-band" elevation="0" rounded="lg">
-          <span class="summary-number">{{ employeeCount }}</span>
-          <span class="summary-label">sample employee records loaded</span>
-        </v-sheet>
+        <EmployeeSummary :employee-count="employeeCount" />
 
         <section class="table-section" aria-labelledby="employee-table-title">
           <div class="section-heading">
