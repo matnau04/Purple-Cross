@@ -9,10 +9,22 @@ const sortConfig = ref({
   direction: 'asc',
 });
 const employeePendingDelete = ref(null);
+const selectedEmployee = ref(null);
 const isDeleteDialogOpen = ref(false);
+const isViewDialogOpen = ref(false);
 const isCreateDialogOpen = ref(false);
+const isEditDialogOpen = ref(false);
 const createFormRef = ref(null);
+const editFormRef = ref(null);
 const employeeForm = ref({
+  code: '',
+  fullName: '',
+  occupation: '',
+  department: '',
+  dateOfEmployment: '',
+  terminationDate: '',
+});
+const editEmployeeForm = ref({
   code: '',
   fullName: '',
   occupation: '',
@@ -44,6 +56,21 @@ const employeeCodeRule = (value) => {
     ) || 'Employee code must be unique.'
   );
 };
+const editEmployeeCodeRule = (value) => {
+  const code = String(value ?? '').trim();
+
+  if (!code) {
+    return 'This field is required.';
+  }
+
+  return (
+    !employees.value.some(
+      (employee) =>
+        employee.code.toLowerCase() === code.toLowerCase() &&
+        employee.code !== selectedEmployee.value?.code,
+    ) || 'Employee code must be unique.'
+  );
+};
 const terminationDateRule = (value) => {
   if (!value || !employeeForm.value.dateOfEmployment) {
     return true;
@@ -51,6 +78,16 @@ const terminationDateRule = (value) => {
 
   return (
     new Date(value) >= new Date(employeeForm.value.dateOfEmployment) ||
+    'Termination date cannot be before date of employment.'
+  );
+};
+const editTerminationDateRule = (value) => {
+  if (!value || !editEmployeeForm.value.dateOfEmployment) {
+    return true;
+  }
+
+  return (
+    new Date(value) >= new Date(editEmployeeForm.value.dateOfEmployment) ||
     'Termination date cannot be before date of employment.'
   );
 };
@@ -167,16 +204,30 @@ const getSortIcon = (key) => {
 };
 
 const viewEmployee = (employee) => {
-  window.alert(`Viewing ${employee.fullName}'s profile will be added in the profile feature.`);
+  selectedEmployee.value = employee;
+  isViewDialogOpen.value = true;
 };
 
 const editEmployee = (employee) => {
-  window.alert(`Editing ${employee.fullName}'s profile will be added in the profile feature.`);
+  selectedEmployee.value = employee;
+  editEmployeeForm.value = { ...employee };
+  isEditDialogOpen.value = true;
 };
 
 const requestDeleteEmployee = (employee) => {
   employeePendingDelete.value = employee;
   isDeleteDialogOpen.value = true;
+};
+
+const closeViewEmployee = () => {
+  selectedEmployee.value = null;
+  isViewDialogOpen.value = false;
+};
+
+const closeEditEmployee = () => {
+  selectedEmployee.value = null;
+  editEmployeeForm.value = getEmptyEmployeeForm();
+  isEditDialogOpen.value = false;
 };
 
 const cancelDeleteEmployee = () => {
@@ -239,6 +290,28 @@ const saveEmployee = async () => {
   };
   searchQuery.value = '';
   closeCreateEmployee();
+};
+
+const saveEmployeeEdits = async () => {
+  const validation = await editFormRef.value?.validate();
+
+  if (!validation?.valid || !selectedEmployee.value) {
+    return;
+  }
+
+  const editedEmployee = {
+    code: editEmployeeForm.value.code.trim(),
+    fullName: editEmployeeForm.value.fullName.trim(),
+    occupation: editEmployeeForm.value.occupation.trim(),
+    department: editEmployeeForm.value.department.trim(),
+    dateOfEmployment: editEmployeeForm.value.dateOfEmployment || null,
+    terminationDate: editEmployeeForm.value.terminationDate || null,
+  };
+
+  employees.value = employees.value.map((employee) =>
+    employee.code === selectedEmployee.value.code ? editedEmployee : employee,
+  );
+  closeEditEmployee();
 };
 </script>
 
@@ -391,6 +464,67 @@ const saveEmployee = async () => {
           </v-card>
         </v-dialog>
 
+        <v-dialog v-model="isViewDialogOpen" max-width="680">
+          <v-card rounded="lg">
+            <v-card-title>Employee profile</v-card-title>
+            <v-card-text v-if="selectedEmployee">
+              <dl class="profile-details">
+                <div>
+                  <dt>Code</dt>
+                  <dd>{{ selectedEmployee.code }}</dd>
+                </div>
+                <div>
+                  <dt>Full Name</dt>
+                  <dd>{{ selectedEmployee.fullName }}</dd>
+                </div>
+                <div>
+                  <dt>Occupation</dt>
+                  <dd>{{ selectedEmployee.occupation }}</dd>
+                </div>
+                <div>
+                  <dt>Department</dt>
+                  <dd>{{ selectedEmployee.department }}</dd>
+                </div>
+                <div>
+                  <dt>Date of Employment</dt>
+                  <dd>
+                    {{ formatDate(selectedEmployee.dateOfEmployment) }}
+                    <v-chip
+                      class="status-chip"
+                      :color="getEmploymentStatusColor(selectedEmployee.dateOfEmployment)"
+                      size="small"
+                      variant="tonal"
+                    >
+                      {{ getEmploymentStatus(selectedEmployee.dateOfEmployment) }}
+                    </v-chip>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Termination Date</dt>
+                  <dd>
+                    {{ formatDate(selectedEmployee.terminationDate) }}
+                    <v-chip
+                      v-if="getTerminationStatus(selectedEmployee.terminationDate)"
+                      class="status-chip"
+                      :color="getTerminationStatusColor(selectedEmployee.terminationDate)"
+                      size="small"
+                      variant="tonal"
+                    >
+                      {{ getTerminationStatus(selectedEmployee.terminationDate) }}
+                    </v-chip>
+                  </dd>
+                </div>
+              </dl>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer />
+              <v-btn color="primary" variant="flat" @click="closeViewEmployee">
+                Close
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
         <v-btn
           class="create-employee-button"
           color="primary"
@@ -456,6 +590,67 @@ const saveEmployee = async () => {
                 Cancel
               </v-btn>
               <v-btn color="primary" variant="flat" @click="saveEmployee">
+                Save
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <v-dialog v-model="isEditDialogOpen" max-width="720" persistent>
+          <v-card rounded="lg">
+            <v-card-title>Edit employee</v-card-title>
+            <v-card-text>
+              <v-form
+                ref="editFormRef"
+                class="employee-form"
+                validate-on="submit"
+                @submit.prevent="saveEmployeeEdits"
+              >
+                <v-text-field
+                  v-model="editEmployeeForm.code"
+                  label="Code"
+                  :rules="[editEmployeeCodeRule]"
+                  variant="outlined"
+                />
+                <v-text-field
+                  v-model="editEmployeeForm.fullName"
+                  label="Full Name"
+                  :rules="[requiredRule]"
+                  variant="outlined"
+                />
+                <v-text-field
+                  v-model="editEmployeeForm.occupation"
+                  label="Occupation"
+                  :rules="[requiredRule]"
+                  variant="outlined"
+                />
+                <v-text-field
+                  v-model="editEmployeeForm.department"
+                  label="Department"
+                  :rules="[requiredRule]"
+                  variant="outlined"
+                />
+                <v-text-field
+                  v-model="editEmployeeForm.dateOfEmployment"
+                  label="Date of Employment"
+                  type="date"
+                  variant="outlined"
+                />
+                <v-text-field
+                  v-model="editEmployeeForm.terminationDate"
+                  label="Termination Date"
+                  :rules="[editTerminationDateRule]"
+                  type="date"
+                  variant="outlined"
+                />
+              </v-form>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer />
+              <v-btn variant="text" @click="closeEditEmployee">
+                Cancel
+              </v-btn>
+              <v-btn color="primary" variant="flat" @click="saveEmployeeEdits">
                 Save
               </v-btn>
             </v-card-actions>
