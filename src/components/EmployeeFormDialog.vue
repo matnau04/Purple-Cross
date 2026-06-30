@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 
+// Create/edit form popup.
 defineProps({
   codeRules: {
     type: Array,
@@ -24,6 +25,7 @@ defineProps({
   },
 });
 
+// Checks the form before saving.
 const emit = defineEmits(['cancel', 'save', 'update:modelValue']);
 const formRef = ref(null);
 const requiredRule = (value) => Boolean(String(value ?? '').trim()) || 'This field is required.';
@@ -38,6 +40,7 @@ const submitForm = async () => {
 </script>
 
 <template>
+  <!-- Keep form open while editing. -->
   <v-dialog
     :model-value="modelValue"
     max-width="720"
@@ -53,6 +56,7 @@ const submitForm = async () => {
           validate-on="submit"
           @submit.prevent="submitForm"
         >
+          <!-- Rules from App.vue. -->
           <v-text-field
             v-model="form.code"
             label="Code"

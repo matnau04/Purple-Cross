@@ -12,18 +12,25 @@ import {
   getTerminationStatus,
 } from './utils/employeeDates';
 
+// Employee list.
 const employees = ref([...employeeSeedData]);
+
+// Search and sort values.
 const searchQuery = ref('');
 const sortConfig = ref({
   key: 'fullName',
   direction: 'asc',
 });
+
+// Selected employee and open dialogs.
 const employeePendingDelete = ref(null);
 const selectedEmployee = ref(null);
 const isDeleteDialogOpen = ref(false);
 const isViewDialogOpen = ref(false);
 const isCreateDialogOpen = ref(false);
 const isEditDialogOpen = ref(false);
+
+// New employee form.
 const employeeForm = ref({
   code: '',
   fullName: '',
@@ -32,6 +39,7 @@ const employeeForm = ref({
   dateOfEmployment: '',
   terminationDate: '',
 });
+// Edit employee form.
 const editEmployeeForm = ref({
   code: '',
   fullName: '',
@@ -41,6 +49,7 @@ const editEmployeeForm = ref({
   terminationDate: '',
 });
 
+// Table columns.
 const sortableColumns = [
   { key: 'code', label: 'Code' },
   { key: 'fullName', label: 'Full Name' },
@@ -49,7 +58,11 @@ const sortableColumns = [
   { key: 'dateOfEmployment', label: 'Date of Employment' },
   { key: 'terminationDate', label: 'Termination Date' },
 ];
+
+// Employee count.
 const employeeCount = computed(() => employees.value.length);
+
+// Checks new employee code.
 const employeeCodeRule = (value) => {
   const code = String(value ?? '').trim();
 
@@ -63,6 +76,8 @@ const employeeCodeRule = (value) => {
     ) || 'Employee code must be unique.'
   );
 };
+
+// Checks edited employee code.
 const editEmployeeCodeRule = (value) => {
   const code = String(value ?? '').trim();
 
@@ -78,6 +93,8 @@ const editEmployeeCodeRule = (value) => {
     ) || 'Employee code must be unique.'
   );
 };
+
+// Checks date order.
 const terminationDateRule = (value) => {
   if (!value || !employeeForm.value.dateOfEmployment) {
     return true;
@@ -88,6 +105,8 @@ const terminationDateRule = (value) => {
     'Termination date cannot be before date of employment.'
   );
 };
+
+// Checks date order while editing.
 const editTerminationDateRule = (value) => {
   if (!value || !editEmployeeForm.value.dateOfEmployment) {
     return true;
@@ -99,6 +118,7 @@ const editTerminationDateRule = (value) => {
   );
 };
 
+// Search filter.
 const filteredEmployees = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
 
@@ -122,6 +142,7 @@ const filteredEmployees = computed(() => {
   );
 });
 
+// Sorted list.
 const sortedEmployees = computed(() => {
   const { key, direction } = sortConfig.value;
   const directionMultiplier = direction === 'asc' ? 1 : -1;
@@ -139,6 +160,7 @@ const sortedEmployees = computed(() => {
   });
 });
 
+// Changes sorting.
 const setSort = (key) => {
   if (sortConfig.value.key === key) {
     sortConfig.value = {
@@ -154,6 +176,7 @@ const setSort = (key) => {
   };
 };
 
+// Sort text.
 const getSortLabel = (key) => {
   if (sortConfig.value.key !== key) {
     return 'Sort';
@@ -162,6 +185,7 @@ const getSortLabel = (key) => {
   return sortConfig.value.direction === 'asc' ? 'Ascending' : 'Descending';
 };
 
+// Sort icon.
 const getSortIcon = (key) => {
   if (sortConfig.value.key !== key) {
     return 'mdi-swap-vertical';
@@ -170,6 +194,7 @@ const getSortIcon = (key) => {
   return sortConfig.value.direction === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down';
 };
 
+// Columns with sort info.
 const sortableTableColumns = computed(() =>
   sortableColumns.map((column) => ({
     ...column,
@@ -178,38 +203,45 @@ const sortableTableColumns = computed(() =>
   })),
 );
 
+// Open view dialog.
 const viewEmployee = (employee) => {
   selectedEmployee.value = employee;
   isViewDialogOpen.value = true;
 };
 
+// Open edit dialog.
 const editEmployee = (employee) => {
   selectedEmployee.value = employee;
   editEmployeeForm.value = { ...employee };
   isEditDialogOpen.value = true;
 };
 
+// Open delete dialog.
 const requestDeleteEmployee = (employee) => {
   employeePendingDelete.value = employee;
   isDeleteDialogOpen.value = true;
 };
 
+// Close view dialog.
 const closeViewEmployee = () => {
   selectedEmployee.value = null;
   isViewDialogOpen.value = false;
 };
 
+// Close edit dialog.
 const closeEditEmployee = () => {
   selectedEmployee.value = null;
   editEmployeeForm.value = getEmptyEmployeeForm();
   isEditDialogOpen.value = false;
 };
 
+// Cancel delete.
 const cancelDeleteEmployee = () => {
   employeePendingDelete.value = null;
   isDeleteDialogOpen.value = false;
 };
 
+// Delete employee.
 const confirmDeleteEmployee = () => {
   if (!employeePendingDelete.value) {
     return;
@@ -222,6 +254,7 @@ const confirmDeleteEmployee = () => {
   cancelDeleteEmployee();
 };
 
+// Blank form.
 const getEmptyEmployeeForm = () => ({
   code: '',
   fullName: '',
@@ -231,15 +264,18 @@ const getEmptyEmployeeForm = () => ({
   terminationDate: '',
 });
 
+// Open create form.
 const openCreateEmployee = () => {
   isCreateDialogOpen.value = true;
 };
 
+// Close create form.
 const closeCreateEmployee = () => {
   employeeForm.value = getEmptyEmployeeForm();
   isCreateDialogOpen.value = false;
 };
 
+// Save new employee.
 const saveEmployee = () => {
   employees.value = [
     ...employees.value,
@@ -253,6 +289,7 @@ const saveEmployee = () => {
     },
   ];
 
+  // Show new employee near the top.
   sortConfig.value = {
     key: 'code',
     direction: 'desc',
@@ -261,6 +298,7 @@ const saveEmployee = () => {
   closeCreateEmployee();
 };
 
+// Save employee changes.
 const saveEmployeeEdits = () => {
   if (!selectedEmployee.value) {
     return;

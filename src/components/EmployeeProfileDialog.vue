@@ -7,6 +7,7 @@ import {
   getTerminationStatusColor,
 } from '../utils/employeeDates';
 
+// View employee popup.
 defineProps({
   employee: {
     type: Object,
@@ -22,6 +23,7 @@ const emit = defineEmits(['close', 'update:modelValue']);
 </script>
 
 <template>
+  <!-- View popup. -->
   <v-dialog
     :model-value="modelValue"
     max-width="680"
@@ -29,6 +31,7 @@ const emit = defineEmits(['close', 'update:modelValue']);
   >
     <v-card rounded="lg">
       <v-card-title>Employee profile</v-card-title>
+      <!-- Show details only when ready. -->
       <v-card-text v-if="employee">
         <dl class="profile-details">
           <div>
@@ -51,6 +54,7 @@ const emit = defineEmits(['close', 'update:modelValue']);
             <dt>Date of Employment</dt>
             <dd>
               {{ formatDate(employee.dateOfEmployment) }}
+              <!-- Employment status. -->
               <v-chip
                 class="status-chip"
                 :color="getEmploymentStatusColor(employee.dateOfEmployment)"
