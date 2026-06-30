@@ -9,7 +9,9 @@ const sortConfig = ref({
   direction: 'asc',
 });
 const employeePendingDelete = ref(null);
+const selectedEmployee = ref(null);
 const isDeleteDialogOpen = ref(false);
+const isViewDialogOpen = ref(false);
 const isCreateDialogOpen = ref(false);
 const createFormRef = ref(null);
 const employeeForm = ref({
@@ -167,7 +169,8 @@ const getSortIcon = (key) => {
 };
 
 const viewEmployee = (employee) => {
-  window.alert(`Viewing ${employee.fullName}'s profile will be added in the profile feature.`);
+  selectedEmployee.value = employee;
+  isViewDialogOpen.value = true;
 };
 
 const editEmployee = (employee) => {
@@ -177,6 +180,11 @@ const editEmployee = (employee) => {
 const requestDeleteEmployee = (employee) => {
   employeePendingDelete.value = employee;
   isDeleteDialogOpen.value = true;
+};
+
+const closeViewEmployee = () => {
+  selectedEmployee.value = null;
+  isViewDialogOpen.value = false;
 };
 
 const cancelDeleteEmployee = () => {
@@ -386,6 +394,67 @@ const saveEmployee = async () => {
               </v-btn>
               <v-btn color="error" variant="flat" @click="confirmDeleteEmployee">
                 Delete
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <v-dialog v-model="isViewDialogOpen" max-width="680">
+          <v-card rounded="lg">
+            <v-card-title>Employee profile</v-card-title>
+            <v-card-text v-if="selectedEmployee">
+              <dl class="profile-details">
+                <div>
+                  <dt>Code</dt>
+                  <dd>{{ selectedEmployee.code }}</dd>
+                </div>
+                <div>
+                  <dt>Full Name</dt>
+                  <dd>{{ selectedEmployee.fullName }}</dd>
+                </div>
+                <div>
+                  <dt>Occupation</dt>
+                  <dd>{{ selectedEmployee.occupation }}</dd>
+                </div>
+                <div>
+                  <dt>Department</dt>
+                  <dd>{{ selectedEmployee.department }}</dd>
+                </div>
+                <div>
+                  <dt>Date of Employment</dt>
+                  <dd>
+                    {{ formatDate(selectedEmployee.dateOfEmployment) }}
+                    <v-chip
+                      class="status-chip"
+                      :color="getEmploymentStatusColor(selectedEmployee.dateOfEmployment)"
+                      size="small"
+                      variant="tonal"
+                    >
+                      {{ getEmploymentStatus(selectedEmployee.dateOfEmployment) }}
+                    </v-chip>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Termination Date</dt>
+                  <dd>
+                    {{ formatDate(selectedEmployee.terminationDate) }}
+                    <v-chip
+                      v-if="getTerminationStatus(selectedEmployee.terminationDate)"
+                      class="status-chip"
+                      :color="getTerminationStatusColor(selectedEmployee.terminationDate)"
+                      size="small"
+                      variant="tonal"
+                    >
+                      {{ getTerminationStatus(selectedEmployee.terminationDate) }}
+                    </v-chip>
+                  </dd>
+                </div>
+              </dl>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer />
+              <v-btn color="primary" variant="flat" @click="closeViewEmployee">
+                Close
               </v-btn>
             </v-card-actions>
           </v-card>
