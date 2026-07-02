@@ -1,21 +1,36 @@
 <script setup>
 import { computed, ref } from 'vue';
+import EmployeeDeleteDialog from './components/EmployeeDeleteDialog.vue';
+import EmployeeFormDialog from './components/EmployeeFormDialog.vue';
+import EmployeeProfileDialog from './components/EmployeeProfileDialog.vue';
+import AppHeader from './components/AppHeader.vue';
+import EmployeeSummary from './components/EmployeeSummary.vue';
+import EmployeeTable from './components/EmployeeTable.vue';
 import employeeSeedData from './data/employees.json';
+import {
+  getEmploymentStatus,
+  getTerminationStatus,
+} from './utils/employeeDates';
 
+// Employee list.
 const employees = ref([...employeeSeedData]);
+
+// Search and sort values.
 const searchQuery = ref('');
 const sortConfig = ref({
   key: 'fullName',
   direction: 'asc',
 });
+
+// Selected employee and open dialogs.
 const employeePendingDelete = ref(null);
 const selectedEmployee = ref(null);
 const isDeleteDialogOpen = ref(false);
 const isViewDialogOpen = ref(false);
 const isCreateDialogOpen = ref(false);
 const isEditDialogOpen = ref(false);
-const createFormRef = ref(null);
-const editFormRef = ref(null);
+
+// New employee form.
 const employeeForm = ref({
   code: '',
   fullName: '',
@@ -24,6 +39,7 @@ const employeeForm = ref({
   dateOfEmployment: '',
   terminationDate: '',
 });
+// Edit employee form.
 const editEmployeeForm = ref({
   code: '',
   fullName: '',
@@ -33,6 +49,7 @@ const editEmployeeForm = ref({
   terminationDate: '',
 });
 
+// Table columns.
 const sortableColumns = [
   { key: 'code', label: 'Code' },
   { key: 'fullName', label: 'Full Name' },
@@ -41,8 +58,11 @@ const sortableColumns = [
   { key: 'dateOfEmployment', label: 'Date of Employment' },
   { key: 'terminationDate', label: 'Termination Date' },
 ];
+
+// Employee count.
 const employeeCount = computed(() => employees.value.length);
-const requiredRule = (value) => Boolean(String(value ?? '').trim()) || 'This field is required.';
+
+// Checks new employee code.
 const employeeCodeRule = (value) => {
   const code = String(value ?? '').trim();
 
@@ -56,6 +76,8 @@ const employeeCodeRule = (value) => {
     ) || 'Employee code must be unique.'
   );
 };
+
+// Checks edited employee code.
 const editEmployeeCodeRule = (value) => {
   const code = String(value ?? '').trim();
 
@@ -71,6 +93,8 @@ const editEmployeeCodeRule = (value) => {
     ) || 'Employee code must be unique.'
   );
 };
+
+// Checks date order.
 const terminationDateRule = (value) => {
   if (!value || !employeeForm.value.dateOfEmployment) {
     return true;
@@ -81,6 +105,8 @@ const terminationDateRule = (value) => {
     'Termination date cannot be before date of employment.'
   );
 };
+
+// Checks date order while editing.
 const editTerminationDateRule = (value) => {
   if (!value || !editEmployeeForm.value.dateOfEmployment) {
     return true;
@@ -92,46 +118,7 @@ const editTerminationDateRule = (value) => {
   );
 };
 
-const dateFormatter = new Intl.DateTimeFormat('en-GB', {
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-});
-
-const getDateStatus = (dateValue, futureLabel, pastLabel) => {
-  if (!dateValue) {
-    return null;
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const targetDate = new Date(dateValue);
-  targetDate.setHours(0, 0, 0, 0);
-
-  return targetDate > today ? futureLabel : pastLabel;
-};
-
-const getEmploymentStatus = (dateValue) =>
-  getDateStatus(dateValue, 'Employed soon', 'Currently employed');
-
-const getTerminationStatus = (dateValue) =>
-  getDateStatus(dateValue, 'To be terminated', 'Terminated');
-
-const getEmploymentStatusColor = (dateValue) =>
-  getEmploymentStatus(dateValue) === 'Employed soon' ? 'info' : 'success';
-
-const getTerminationStatusColor = (dateValue) =>
-  getTerminationStatus(dateValue) === 'To be terminated' ? 'warning' : 'error';
-
-const formatDate = (dateValue) => {
-  if (!dateValue) {
-    return 'Not scheduled';
-  }
-
-  return dateFormatter.format(new Date(dateValue));
-};
-
+// Search filter.
 const filteredEmployees = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
 
@@ -155,6 +142,7 @@ const filteredEmployees = computed(() => {
   );
 });
 
+// Sorted list.
 const sortedEmployees = computed(() => {
   const { key, direction } = sortConfig.value;
   const directionMultiplier = direction === 'asc' ? 1 : -1;
@@ -172,6 +160,7 @@ const sortedEmployees = computed(() => {
   });
 });
 
+// Changes sorting.
 const setSort = (key) => {
   if (sortConfig.value.key === key) {
     sortConfig.value = {
@@ -187,6 +176,7 @@ const setSort = (key) => {
   };
 };
 
+// Sort text.
 const getSortLabel = (key) => {
   if (sortConfig.value.key !== key) {
     return 'Sort';
@@ -195,6 +185,7 @@ const getSortLabel = (key) => {
   return sortConfig.value.direction === 'asc' ? 'Ascending' : 'Descending';
 };
 
+// Sort icon.
 const getSortIcon = (key) => {
   if (sortConfig.value.key !== key) {
     return 'mdi-swap-vertical';
@@ -203,38 +194,54 @@ const getSortIcon = (key) => {
   return sortConfig.value.direction === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down';
 };
 
+// Columns with sort info.
+const sortableTableColumns = computed(() =>
+  sortableColumns.map((column) => ({
+    ...column,
+    sortIcon: getSortIcon(column.key),
+    sortLabel: getSortLabel(column.key),
+  })),
+);
+
+// Open view dialog.
 const viewEmployee = (employee) => {
   selectedEmployee.value = employee;
   isViewDialogOpen.value = true;
 };
 
+// Open edit dialog.
 const editEmployee = (employee) => {
   selectedEmployee.value = employee;
   editEmployeeForm.value = { ...employee };
   isEditDialogOpen.value = true;
 };
 
+// Open delete dialog.
 const requestDeleteEmployee = (employee) => {
   employeePendingDelete.value = employee;
   isDeleteDialogOpen.value = true;
 };
 
+// Close view dialog.
 const closeViewEmployee = () => {
   selectedEmployee.value = null;
   isViewDialogOpen.value = false;
 };
 
+// Close edit dialog.
 const closeEditEmployee = () => {
   selectedEmployee.value = null;
   editEmployeeForm.value = getEmptyEmployeeForm();
   isEditDialogOpen.value = false;
 };
 
+// Cancel delete.
 const cancelDeleteEmployee = () => {
   employeePendingDelete.value = null;
   isDeleteDialogOpen.value = false;
 };
 
+// Delete employee.
 const confirmDeleteEmployee = () => {
   if (!employeePendingDelete.value) {
     return;
@@ -247,6 +254,7 @@ const confirmDeleteEmployee = () => {
   cancelDeleteEmployee();
 };
 
+// Blank form.
 const getEmptyEmployeeForm = () => ({
   code: '',
   fullName: '',
@@ -256,22 +264,19 @@ const getEmptyEmployeeForm = () => ({
   terminationDate: '',
 });
 
+// Open create form.
 const openCreateEmployee = () => {
   isCreateDialogOpen.value = true;
 };
 
+// Close create form.
 const closeCreateEmployee = () => {
   employeeForm.value = getEmptyEmployeeForm();
   isCreateDialogOpen.value = false;
 };
 
-const saveEmployee = async () => {
-  const validation = await createFormRef.value?.validate();
-
-  if (!validation?.valid) {
-    return;
-  }
-
+// Save new employee.
+const saveEmployee = () => {
   employees.value = [
     ...employees.value,
     {
@@ -284,6 +289,7 @@ const saveEmployee = async () => {
     },
   ];
 
+  // Show new employee near the top.
   sortConfig.value = {
     key: 'code',
     direction: 'desc',
@@ -292,10 +298,9 @@ const saveEmployee = async () => {
   closeCreateEmployee();
 };
 
-const saveEmployeeEdits = async () => {
-  const validation = await editFormRef.value?.validate();
-
-  if (!validation?.valid || !selectedEmployee.value) {
+// Save employee changes.
+const saveEmployeeEdits = () => {
+  if (!selectedEmployee.value) {
     return;
   }
 
@@ -319,211 +324,33 @@ const saveEmployeeEdits = async () => {
   <v-app>
     <v-main>
       <div class="app-shell">
-        <v-sheet class="top-bar" color="surface" elevation="0" rounded="lg">
-          <div>
-            <p class="eyebrow">Purple Cross Ltd</p>
-            <h1>Employee Management</h1>
-          </div>
-          <v-spacer />
-          <v-avatar color="primary" size="48">
-            <span class="user-initials">HR</span>
-          </v-avatar>
-        </v-sheet>
+        <AppHeader />
 
-        <v-sheet class="summary-band" elevation="0" rounded="lg">
-          <span class="summary-number">{{ employeeCount }}</span>
-          <span class="summary-label">sample employee records loaded</span>
-        </v-sheet>
+        <EmployeeSummary :employee-count="employeeCount" />
 
-        <section class="table-section" aria-labelledby="employee-table-title">
-          <div class="section-heading">
-            <div>
-              <h2 id="employee-table-title">Employees</h2>
-              <p>
-                Showing {{ sortedEmployees.length }} of {{ employeeCount }} employee records.
-              </p>
-            </div>
-            <v-text-field
-              v-model="searchQuery"
-              class="search-control"
-              clearable
-              density="comfortable"
-              hide-details
-              label="Search employees"
-              placeholder="Name, department, status..."
-              prepend-inner-icon="mdi-magnify"
-              variant="outlined"
-            />
-          </div>
+        <EmployeeTable
+          v-model:search-query="searchQuery"
+          :employee-count="employeeCount"
+          :employees="sortedEmployees"
+          :sortable-columns="sortableTableColumns"
+          @delete-employee="requestDeleteEmployee"
+          @edit-employee="editEmployee"
+          @set-sort="setSort"
+          @view-employee="viewEmployee"
+        />
 
-          <v-table class="employee-table" density="comfortable">
-            <thead>
-              <tr>
-                <th
-                  v-for="column in sortableColumns"
-                  :key="column.key"
-                  scope="col"
-                >
-                  <v-btn
-                    :append-icon="getSortIcon(column.key)"
-                    :aria-label="`${getSortLabel(column.key)} by ${column.label}`"
-                    class="sort-button"
-                    size="small"
-                    variant="text"
-                    @click="setSort(column.key)"
-                  >
-                    {{ column.label }}
-                  </v-btn>
-                </th>
-                <th scope="col">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="employee in sortedEmployees" :key="employee.code">
-                <td>{{ employee.code }}</td>
-                <td>{{ employee.fullName }}</td>
-                <td>{{ employee.occupation }}</td>
-                <td>{{ employee.department }}</td>
-                <td>
-                  <span>{{ formatDate(employee.dateOfEmployment) }}</span>
-                  <v-chip
-                    class="status-chip"
-                    :color="getEmploymentStatusColor(employee.dateOfEmployment)"
-                    size="small"
-                    variant="tonal"
-                  >
-                    {{ getEmploymentStatus(employee.dateOfEmployment) }}
-                  </v-chip>
-                </td>
-                <td>
-                  <span>{{ formatDate(employee.terminationDate) }}</span>
-                  <v-chip
-                    v-if="getTerminationStatus(employee.terminationDate)"
-                    class="status-chip"
-                    :color="getTerminationStatusColor(employee.terminationDate)"
-                    size="small"
-                    variant="tonal"
-                  >
-                    {{ getTerminationStatus(employee.terminationDate) }}
-                  </v-chip>
-                </td>
-                <td>
-                  <div class="row-actions" :aria-label="`Actions for ${employee.fullName}`">
-                    <v-btn
-                      prepend-icon="mdi-eye"
-                      size="small"
-                      variant="outlined"
-                      @click="viewEmployee(employee)"
-                    >
-                      View
-                    </v-btn>
-                    <v-btn
-                      prepend-icon="mdi-pencil"
-                      size="small"
-                      variant="outlined"
-                      @click="editEmployee(employee)"
-                    >
-                      Edit
-                    </v-btn>
-                    <v-btn
-                      color="error"
-                      prepend-icon="mdi-delete"
-                      size="small"
-                      variant="outlined"
-                      @click="requestDeleteEmployee(employee)"
-                    >
-                      Delete
-                    </v-btn>
-                  </div>
-                </td>
-              </tr>
-              <tr v-if="sortedEmployees.length === 0">
-                <td class="empty-state" colspan="7">
-                  No employees match the current search.
-                </td>
-              </tr>
-            </tbody>
-          </v-table>
-        </section>
+        <EmployeeDeleteDialog
+          v-model="isDeleteDialogOpen"
+          :employee="employeePendingDelete"
+          @cancel="cancelDeleteEmployee"
+          @confirm="confirmDeleteEmployee"
+        />
 
-        <v-dialog v-model="isDeleteDialogOpen" max-width="440">
-          <v-card rounded="lg">
-            <v-card-title>Delete employee</v-card-title>
-            <v-card-text>
-              Delete {{ employeePendingDelete?.fullName }} from the employee list?
-            </v-card-text>
-            <v-card-actions>
-              <v-spacer />
-              <v-btn variant="text" @click="cancelDeleteEmployee">
-                Cancel
-              </v-btn>
-              <v-btn color="error" variant="flat" @click="confirmDeleteEmployee">
-                Delete
-              </v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
-
-        <v-dialog v-model="isViewDialogOpen" max-width="680">
-          <v-card rounded="lg">
-            <v-card-title>Employee profile</v-card-title>
-            <v-card-text v-if="selectedEmployee">
-              <dl class="profile-details">
-                <div>
-                  <dt>Code</dt>
-                  <dd>{{ selectedEmployee.code }}</dd>
-                </div>
-                <div>
-                  <dt>Full Name</dt>
-                  <dd>{{ selectedEmployee.fullName }}</dd>
-                </div>
-                <div>
-                  <dt>Occupation</dt>
-                  <dd>{{ selectedEmployee.occupation }}</dd>
-                </div>
-                <div>
-                  <dt>Department</dt>
-                  <dd>{{ selectedEmployee.department }}</dd>
-                </div>
-                <div>
-                  <dt>Date of Employment</dt>
-                  <dd>
-                    {{ formatDate(selectedEmployee.dateOfEmployment) }}
-                    <v-chip
-                      class="status-chip"
-                      :color="getEmploymentStatusColor(selectedEmployee.dateOfEmployment)"
-                      size="small"
-                      variant="tonal"
-                    >
-                      {{ getEmploymentStatus(selectedEmployee.dateOfEmployment) }}
-                    </v-chip>
-                  </dd>
-                </div>
-                <div>
-                  <dt>Termination Date</dt>
-                  <dd>
-                    {{ formatDate(selectedEmployee.terminationDate) }}
-                    <v-chip
-                      v-if="getTerminationStatus(selectedEmployee.terminationDate)"
-                      class="status-chip"
-                      :color="getTerminationStatusColor(selectedEmployee.terminationDate)"
-                      size="small"
-                      variant="tonal"
-                    >
-                      {{ getTerminationStatus(selectedEmployee.terminationDate) }}
-                    </v-chip>
-                  </dd>
-                </div>
-              </dl>
-            </v-card-text>
-            <v-card-actions>
-              <v-spacer />
-              <v-btn color="primary" variant="flat" @click="closeViewEmployee">
-                Close
-              </v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
+        <EmployeeProfileDialog
+          v-model="isViewDialogOpen"
+          :employee="selectedEmployee"
+          @close="closeViewEmployee"
+        />
 
         <v-btn
           class="create-employee-button"
@@ -535,127 +362,25 @@ const saveEmployeeEdits = async () => {
           Create Employee
         </v-btn>
 
-        <v-dialog v-model="isCreateDialogOpen" max-width="720" persistent>
-          <v-card rounded="lg">
-            <v-card-title>Create employee</v-card-title>
-            <v-card-text>
-              <v-form
-                ref="createFormRef"
-                class="employee-form"
-                validate-on="submit"
-                @submit.prevent="saveEmployee"
-              >
-                <v-text-field
-                  v-model="employeeForm.code"
-                  label="Code"
-                  :rules="[employeeCodeRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="employeeForm.fullName"
-                  label="Full Name"
-                  :rules="[requiredRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="employeeForm.occupation"
-                  label="Occupation"
-                  :rules="[requiredRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="employeeForm.department"
-                  label="Department"
-                  :rules="[requiredRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="employeeForm.dateOfEmployment"
-                  label="Date of Employment"
-                  type="date"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="employeeForm.terminationDate"
-                  label="Termination Date"
-                  :rules="[terminationDateRule]"
-                  type="date"
-                  variant="outlined"
-                />
-              </v-form>
-            </v-card-text>
-            <v-card-actions>
-              <v-spacer />
-              <v-btn variant="text" @click="closeCreateEmployee">
-                Cancel
-              </v-btn>
-              <v-btn color="primary" variant="flat" @click="saveEmployee">
-                Save
-              </v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
+        <EmployeeFormDialog
+          v-model="isCreateDialogOpen"
+          :code-rules="[employeeCodeRule]"
+          :form="employeeForm"
+          :termination-date-rules="[terminationDateRule]"
+          title="Create employee"
+          @cancel="closeCreateEmployee"
+          @save="saveEmployee"
+        />
 
-        <v-dialog v-model="isEditDialogOpen" max-width="720" persistent>
-          <v-card rounded="lg">
-            <v-card-title>Edit employee</v-card-title>
-            <v-card-text>
-              <v-form
-                ref="editFormRef"
-                class="employee-form"
-                validate-on="submit"
-                @submit.prevent="saveEmployeeEdits"
-              >
-                <v-text-field
-                  v-model="editEmployeeForm.code"
-                  label="Code"
-                  :rules="[editEmployeeCodeRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="editEmployeeForm.fullName"
-                  label="Full Name"
-                  :rules="[requiredRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="editEmployeeForm.occupation"
-                  label="Occupation"
-                  :rules="[requiredRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="editEmployeeForm.department"
-                  label="Department"
-                  :rules="[requiredRule]"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="editEmployeeForm.dateOfEmployment"
-                  label="Date of Employment"
-                  type="date"
-                  variant="outlined"
-                />
-                <v-text-field
-                  v-model="editEmployeeForm.terminationDate"
-                  label="Termination Date"
-                  :rules="[editTerminationDateRule]"
-                  type="date"
-                  variant="outlined"
-                />
-              </v-form>
-            </v-card-text>
-            <v-card-actions>
-              <v-spacer />
-              <v-btn variant="text" @click="closeEditEmployee">
-                Cancel
-              </v-btn>
-              <v-btn color="primary" variant="flat" @click="saveEmployeeEdits">
-                Save
-              </v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
+        <EmployeeFormDialog
+          v-model="isEditDialogOpen"
+          :code-rules="[editEmployeeCodeRule]"
+          :form="editEmployeeForm"
+          :termination-date-rules="[editTerminationDateRule]"
+          title="Edit employee"
+          @cancel="closeEditEmployee"
+          @save="saveEmployeeEdits"
+        />
       </div>
     </v-main>
   </v-app>

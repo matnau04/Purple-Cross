@@ -7,10 +7,12 @@ import * as directives from 'vuetify/directives';
 import App from './App.vue';
 import './styles.css';
 
+// Adds Vuetify to the app.
 const vuetify = createVuetify({
   components,
   directives,
   theme: {
+    // Main app colours.
     defaultTheme: 'purpleCrossTheme',
     themes: {
       purpleCrossTheme: {
