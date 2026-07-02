@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue';
 import {
   formatDate,
   getEmploymentStatus,
@@ -7,7 +8,11 @@ import {
   getTerminationStatusColor,
 } from '../utils/employeeDates';
 
-defineProps({
+const props = defineProps({
+  currentPage: {
+    type: Number,
+    required: true,
+  },
   employeeCount: {
     type: Number,
     required: true,
@@ -20,8 +25,20 @@ defineProps({
     type: String,
     required: true,
   },
+  itemsPerPage: {
+    type: Number,
+    required: true,
+  },
+  resultCount: {
+    type: Number,
+    required: true,
+  },
   sortableColumns: {
     type: Array,
+    required: true,
+  },
+  totalPages: {
+    type: Number,
     required: true,
   },
 });
@@ -30,6 +47,8 @@ defineProps({
 const emit = defineEmits([
   'delete-employee',
   'edit-employee',
+  'update:current-page',
+  'update:items-per-page',
   'update:search-query',
   'set-sort',
   'view-employee',
@@ -38,6 +57,17 @@ const emit = defineEmits([
 
 const getSortLabel = (column) => column.sortLabel;
 const getSortIcon = (column) => column.sortIcon;
+const pageSizeOptions = [5, 10, 25, 50];
+const firstVisibleRecord = computed(() => {
+  if (props.resultCount === 0) {
+    return 0;
+  }
+
+  return (props.currentPage - 1) * props.itemsPerPage + 1;
+});
+const lastVisibleRecord = computed(() =>
+  Math.min(props.currentPage * props.itemsPerPage, props.resultCount),
+);
 </script>
 
 <template>
@@ -47,7 +77,8 @@ const getSortIcon = (column) => column.sortIcon;
       <div>
         <h2 id="employee-table-title">Employees</h2>
         <p>
-          Showing {{ employees.length }} of {{ employeeCount }} employee records.
+          Showing {{ firstVisibleRecord }}-{{ lastVisibleRecord }} of {{ resultCount }} filtered records.
+          {{ employeeCount }} total records.
         </p>
       </div>
       <!-- Emit an empty string instead of null when Vuetify's clear button is used. -->
@@ -155,5 +186,28 @@ const getSortIcon = (column) => column.sortIcon;
         </tr>
       </tbody>
     </v-table>
+
+    <div class="pagination-bar">
+      <!-- Lets the user choose how many rows to see on each page. -->
+      <v-select
+        density="comfortable"
+        hide-details
+        item-title="label"
+        item-value="value"
+        label="Rows per page"
+        :items="pageSizeOptions.map((value) => ({ label: `${value}`, value }))"
+        :model-value="itemsPerPage"
+        variant="outlined"
+        @update:model-value="emit('update:items-per-page', $event)"
+      />
+      <!-- Moves between pages of the filtered employee list. -->
+      <v-pagination
+        :length="totalPages"
+        :model-value="currentPage"
+        rounded="circle"
+        total-visible="5"
+        @update:model-value="emit('update:current-page', $event)"
+      />
+    </div>
   </section>
 </template>
