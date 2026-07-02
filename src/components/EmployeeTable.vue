@@ -7,7 +7,6 @@ import {
   getTerminationStatusColor,
 } from '../utils/employeeDates';
 
-// Employee table.
 defineProps({
   employeeCount: {
     type: Number,
@@ -27,7 +26,7 @@ defineProps({
   },
 });
 
-// Sends clicks back to App.vue.
+
 const emit = defineEmits([
   'delete-employee',
   'edit-employee',
@@ -36,13 +35,13 @@ const emit = defineEmits([
   'view-employee',
 ]);
 
-// Gets sort text and icon.
+
 const getSortLabel = (column) => column.sortLabel;
 const getSortIcon = (column) => column.sortIcon;
 </script>
 
 <template>
-  <!-- Search and table. -->
+  <!-- Main grid section: search, sortable headers, employee rows, and row actions. -->
   <section class="table-section" aria-labelledby="employee-table-title">
     <div class="section-heading">
       <div>
@@ -51,7 +50,7 @@ const getSortIcon = (column) => column.sortIcon;
           Showing {{ employees.length }} of {{ employeeCount }} employee records.
         </p>
       </div>
-      <!-- Updates search text. -->
+      <!-- Emit an empty string instead of null when Vuetify's clear button is used. -->
       <v-text-field
         class="search-control"
         clearable
@@ -96,7 +95,7 @@ const getSortIcon = (column) => column.sortIcon;
           <td>{{ employee.department }}</td>
           <td>
             <span>{{ formatDate(employee.dateOfEmployment) }}</span>
-            <!-- Employment status. -->
+            <!-- Employment status is derived from the date, not stored separately in JSON. -->
             <v-chip
               class="status-chip"
               :color="getEmploymentStatusColor(employee.dateOfEmployment)"
@@ -108,7 +107,7 @@ const getSortIcon = (column) => column.sortIcon;
           </td>
           <td>
             <span>{{ formatDate(employee.terminationDate) }}</span>
-            <!-- Termination status. -->
+            <!-- No termination chip is shown when terminationDate is empty/null. -->
             <v-chip
               v-if="getTerminationStatus(employee.terminationDate)"
               class="status-chip"
@@ -120,7 +119,6 @@ const getSortIcon = (column) => column.sortIcon;
             </v-chip>
           </td>
           <td>
-            <!-- Row buttons. -->
             <div class="row-actions" :aria-label="`Actions for ${employee.fullName}`">
               <v-btn
                 prepend-icon="mdi-eye"
