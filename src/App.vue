@@ -21,6 +21,9 @@ const sortConfig = ref({
   key: 'fullName',
   direction: 'asc',
 });
+// Pagination values.
+const currentPage = ref(1);
+const itemsPerPage = ref(5);
 
 // Selected employee and open dialogs.
 const employeePendingDelete = ref(null);
@@ -61,6 +64,17 @@ const sortableColumns = [
 
 // Employee count.
 const employeeCount = computed(() => employees.value.length);
+// Number of pages after search and sorting.
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(sortedEmployees.value.length / itemsPerPage.value)),
+);
+// Employees shown on the current page.
+const paginatedEmployees = computed(() => {
+  const startIndex = (currentPage.value - 1) * itemsPerPage.value;
+  const endIndex = startIndex + itemsPerPage.value;
+
+  return sortedEmployees.value.slice(startIndex, endIndex);
+});
 
 // Checks new employee code.
 const employeeCodeRule = (value) => {
@@ -167,6 +181,7 @@ const setSort = (key) => {
       key,
       direction: sortConfig.value.direction === 'asc' ? 'desc' : 'asc',
     };
+    currentPage.value = 1;
     return;
   }
 
@@ -174,6 +189,19 @@ const setSort = (key) => {
     key,
     direction: 'asc',
   };
+  currentPage.value = 1;
+};
+
+// Update search and go back to page 1.
+const updateSearchQuery = (value) => {
+  searchQuery.value = value;
+  currentPage.value = 1;
+};
+
+// Update page size and go back to page 1.
+const updateItemsPerPage = (value) => {
+  itemsPerPage.value = Number(value);
+  currentPage.value = 1;
 };
 
 // Sort text.
@@ -251,6 +279,7 @@ const confirmDeleteEmployee = () => {
   employees.value = employees.value.filter(
     (currentEmployee) => currentEmployee.code !== employeeCode,
   );
+  currentPage.value = Math.min(currentPage.value, totalPages.value);
   cancelDeleteEmployee();
 };
 
@@ -295,6 +324,7 @@ const saveEmployee = () => {
     direction: 'desc',
   };
   searchQuery.value = '';
+  currentPage.value = 1;
   closeCreateEmployee();
 };
 
@@ -329,12 +359,18 @@ const saveEmployeeEdits = () => {
         <EmployeeSummary :employee-count="employeeCount" />
 
         <EmployeeTable
-          v-model:search-query="searchQuery"
+          :current-page="currentPage"
           :employee-count="employeeCount"
-          :employees="sortedEmployees"
+          :employees="paginatedEmployees"
+          :items-per-page="itemsPerPage"
+          :result-count="sortedEmployees.length"
           :sortable-columns="sortableTableColumns"
+          :total-pages="totalPages"
           @delete-employee="requestDeleteEmployee"
           @edit-employee="editEmployee"
+          @update:current-page="currentPage = $event"
+          @update:items-per-page="updateItemsPerPage"
+          @update:search-query="updateSearchQuery"
           @set-sort="setSort"
           @view-employee="viewEmployee"
         />
